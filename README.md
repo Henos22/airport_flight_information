@@ -1,7 +1,7 @@
 # Flight Information
 
 <p>
-  <img src="assets/gatwick.jpeg" alt="accessibility text">
+  <img src="assets/gatwick.jpg" alt="accessibility text">
   <img src="assets/flight_board.jpeg" width="380" alt="accessibility text">
 </p>
 
