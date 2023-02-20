@@ -20,7 +20,7 @@ load_dotenv()
 
 flight_key = os.environ.get("FLIGHT_KEY")
 weather_key = os.environ.get("WEATHER_KEY")
-# Load JSON file containing airport information
+
 
 def loadAirportJSON():
     
@@ -29,29 +29,48 @@ def loadAirportJSON():
     
     return airportData
 
-# Load JSON file matching country codes with country name 
 
-def countryJSON() :
+def countryJSON() -> dict:
+    """Loads a dictionary of country/country code key-value pairs
+
+    Returns:
+        dict: country/country code key-value pairs
+    """
     
     access = open('countries.json')
     countryData = json.load(access)
-
+   
     return countryData
 
-# Find outgoing flights from given airport iata
 
-def getFlightsFromIata(iata):
-    
+def getFlightsFromIata(iata: str) -> list:
+    """Loads all flight information from the relevant airport
+
+    Args:
+        iata (str): airport's unique id
+
+    Returns:
+        list: contains a dictionary of flight details
+    """
+
     response = requests.get(f"https://airlabs.co/api/v9/schedules?dep_iata={iata}&api_key={flight_key}")
     json = response.json()
     response.raise_for_status()
-    
-    return json["response"]
-         
-# Find possible airport matches from user's search 
 
-def findAirportsFromName(name, airportData):
-    
+    return json["response"]
+
+
+def findAirportsFromName(name: str, airportData: list) -> dict:
+    """Gets airport data for the selected airport name
+
+    Args:
+        name (str): name of the selected airport
+        airportData (list): contains dictionaries with data for every airport
+
+    Returns:
+        dict: the data for the relevant airport
+    """
+
     airport_choices = []
     airport_choices_names = []
     
@@ -73,22 +92,35 @@ def findAirportsFromName(name, airportData):
     
     for choice in airport_choices :
         if airport == choice["name"]:
-                     
             return choice
 
-# Find airport object of flight destination
 
-def findAirportFromIata(iata, airportData):
+def findAirportFromIata(iata: str, airportData: list) -> dict:
+    """Get airport data for airport with the matching iata(id)
+
+    Args:
+        iata (str): id for the desired airport
+        airportData (list): details of every airport
+
+    Returns:
+        dict: data for the desired airport
+    """
     
     for airport in airportData :
         if airport.get("iata") == iata :
                  
             return airport
         
-# Find country code for flight destination
 
-def findCountryFromIso(iata) :
+def findCountryFromIso(iata: str) -> str:
+    """Find the country name from the country code
 
+    Args:
+        iata (str): country code
+
+    Returns:
+        str: country name
+    """
     countryData = countryJSON()
     airportData = loadAirportJSON()
     airport = findAirportFromIata(iata, airportData)    
@@ -97,12 +129,19 @@ def findCountryFromIso(iata) :
         return "N/A"
 
     iso = airport["iso"]
+ 
     return countryData[iso]
 
 
-# Find time and date of flight's departure and arrival
+def findTimeOfDepartureAndArrival(flight: dict) -> list:
+    """Find the departure & arrival times for a flight
 
-def findTimeOfDepartureAndArrival(flight) :
+    Args:
+        flight (dict): flight details
+
+    Returns:
+        list: the formatted departure & arrival times
+    """
     
     Months=["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     
@@ -119,16 +158,26 @@ def findTimeOfDepartureAndArrival(flight) :
         arr_str = arr_time[11:16] + " on " + arr_time[8:10] + " " + Months[int(arr_time[5:7])-1] + " " + arr_time[0:4]    
                 
     return [dep_str, arr_str]
+ 
 
-# Ask user for airport name    
+def getSearch() -> str:
+    """Get the user's airport choice
 
-def getSearch():
-    
+    Returns:
+        str: airport name
+    """
     return Prompt.ask("Search for an airport")
 
-# Get latitude and longtitude for flight destination
 
-def lat_and_lng(iata) :
+def lat_and_lng(iata: str) -> list:
+    """Get the latitude and longtitude of the relevant airport
+
+    Args:
+        iata (str): airport code
+
+    Returns:
+        list: latitude and longtitude of the airport
+    """
     
     airport_info = loadAirportJSON()
     for airport in airport_info :
@@ -136,28 +185,44 @@ def lat_and_lng(iata) :
             return [airport.get("lat"),airport.get("lon")]
 
 
-# Get weather for flight destination
+def loadWeatherForLocation(lat: str, lng: str) -> list:
+    """Gets the weather at the given latitude and longtitude
 
-def loadWeatherForLocation(lat, lng):
+    Args:
+        lat (str): latitude of an airport
+        lng (str): longtitude of an airport
+
+    Returns:
+        list: the temperature and weather conditions
+    """
    
     response = requests.get(f"http://api.weatherapi.com/v1/current.json?key={weather_key}={lat},{lng}&aqi=no")
     json = response.json()
     response.raise_for_status()
-
     temp = json["current"]["temp_c"]
     conditions = json["current"]["condition"]["text"]
 
     return [str(temp),conditions]
 
-# Saves table to html file
 
-def saveTableToHtml(iata) :
+def saveTableToHtml(iata: str):
+    """Saves a html file containing the flights table to the directory
+
+    Args:
+        iata (str): airport code
+    """
     console.save_html(f"{iata} Flight Information")
 
-# Formats table 
 
-def formatTable(airport) :
+def formatTable(airport: dict) -> Table:
+    """Creates the empty flight details table with all the relevant columns
 
+    Args:
+        airport (dict): _description_
+
+    Returns:
+        Table: _description_
+    """
     table = Table(title = f"{airport.get('name')}\n------Flight Information------")
 
     table.add_column("Flight Number", justify="left", style ="cyan")
@@ -171,10 +236,14 @@ def formatTable(airport) :
 
     return table
 
-# Edits table for selected airport
 
-def renderFlights(flights, table):
-    
+def renderFlights(flights: list, table: Table):
+    """Inputs all the flight information into the rows of the table
+
+    Args:
+        flights (list): list of all flights at the airport
+        table (Table): the empty flight details table
+    """
     if len(flights) == 0 :
         text = Text("No outgoing flights from this Airport")
         text.stylize("bold red")
@@ -221,11 +290,11 @@ def renderFlights(flights, table):
         ask_to_save = Confirm.ask("Do you want to save to html?") 
         if ask_to_save :
             saveTableToHtml(dep_iata)       
-           
-
-# Starts the programme  
+        
 
 def main():
+    "Starts the programme"
+
     console.print(" ")
     console.print("✈️ ✈️ ✈️ ✈️ ✈️ ✈️ ✈️ ✈️")
     console.print("Welcome to the Airports Informer Tool")
@@ -243,4 +312,5 @@ def main():
         renderFlights(flights,table)
 
 
-main()
+if __name__ == "__main__":
+    main()
