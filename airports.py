@@ -22,11 +22,15 @@ flight_key = os.environ.get("FLIGHT_KEY")
 weather_key = os.environ.get("WEATHER_KEY")
 
 
-def loadAirportJSON():
-    
+def loadAirportJSON() -> list:
+    """Load in airport data from json file
+
+    Returns:
+        list: data on all the airports
+    """
     access = open('airports.json')
     airportData = json.load(access)
-    
+
     return airportData
 
 
